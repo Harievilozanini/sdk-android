@@ -1,17 +1,16 @@
 package com.mercadopago.util;
 
-import com.squareup.okhttp.Cache;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
+import okhttp3.Cache;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import android.content.Context;
-import android.util.Log;
 
-import retrofit.client.OkClient;
+import com.mercadopago.core.Settings;
 
 public class HttpClientUtil {
 
@@ -20,22 +19,28 @@ public class HttpClientUtil {
     public static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
 
-    public synchronized static OkClient getClient(Context context) {
+    public synchronized static OkHttpClient getClient(Context context) {
 
         if (client == null) {
 
-            Log.i("HttpClientUtil", "new instance");
-            client = new OkHttpClient();
+            // Set log info
+            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+            interceptor.setLevel(Settings.OKHTTP_LOGGING);
 
-            client.setConnectTimeout(20, TimeUnit.SECONDS);
-            client.setWriteTimeout(20, TimeUnit.SECONDS);
-            client.setReadTimeout(20, TimeUnit.SECONDS);
-
+            // Set cache size
             int cacheSize = 10 * 1024 * 1024; // 10 MiB
             Cache cache = new Cache(new File(context.getCacheDir().getPath() + "okhttp"), cacheSize);
-            client.setCache(cache);
+
+            // Set client
+            client = new OkHttpClient.Builder()
+                    .connectTimeout(20, TimeUnit.SECONDS)
+                    .writeTimeout(20, TimeUnit.SECONDS)
+                    .readTimeout(20, TimeUnit.SECONDS)
+                    .cache(cache)
+                    .addInterceptor(interceptor)
+                    .build();
         }
 
-        return new OkClient(client);
+        return client;
     }
 }

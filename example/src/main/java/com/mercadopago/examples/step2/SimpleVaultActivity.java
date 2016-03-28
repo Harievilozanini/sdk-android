@@ -33,9 +33,9 @@ import com.mercadopago.util.MercadoPagoUtil;
 import java.lang.reflect.Type;
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class SimpleVaultActivity extends AppCompatActivity {
 
@@ -278,19 +278,28 @@ public class SimpleVaultActivity extends AppCompatActivity {
     protected void getCustomerCardsAsync() {
 
         LayoutUtil.showProgressLayout(mActivity);
-        MerchantServer.getCustomer(this, mMerchantBaseUrl, mMerchantGetCustomerUri, mMerchantAccessToken, new Callback<Customer>() {
+        Call<Customer> call = MerchantServer.getCustomer(this, mMerchantBaseUrl, mMerchantGetCustomerUri, mMerchantAccessToken);
+        call.enqueue(new Callback<Customer>() {
             @Override
-            public void success(Customer customer, Response response) {
+            public void onResponse(Call<Customer> call, Response<Customer> response) {
 
-                mCards = customer.getCards();
-                LayoutUtil.showRegularLayout(mActivity);
+                if (response.isSuccessful()) {
+
+                    mCards = response.body().getCards();
+                    LayoutUtil.showRegularLayout(mActivity);
+
+                } else {
+
+                    mExceptionOnMethod = "getCustomerCardsAsync";
+                    ApiUtil.finishWithApiException(mActivity, response);
+                }
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void onFailure(Call<Customer> call, Throwable t) {
 
                 mExceptionOnMethod = "getCustomerCardsAsync";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, t);
             }
         });
     }
@@ -401,7 +410,8 @@ public class SimpleVaultActivity extends AppCompatActivity {
 
         // Create token
         LayoutUtil.showProgressLayout(mActivity);
-        mMercadoPago.createToken(mCardToken, getCreateTokenCallback());
+        Call<Token> call = mMercadoPago.createToken(mCardToken);
+        call.enqueue(getCreateTokenCallback());
     }
 
     protected void createSavedCardToken() {
@@ -421,27 +431,36 @@ public class SimpleVaultActivity extends AppCompatActivity {
 
         // Create token
         LayoutUtil.showProgressLayout(mActivity);
-        mMercadoPago.createToken(savedCardToken, getCreateTokenCallback());
+        Call<Token> call = mMercadoPago.createToken(savedCardToken);
+        call.enqueue(getCreateTokenCallback());
     }
 
     protected Callback<Token> getCreateTokenCallback() {
 
         return new Callback<Token>() {
             @Override
-            public void success(Token token, Response response) {
+            public void onResponse(Call<Token> call, Response<Token> response) {
 
-                Intent returnIntent = new Intent();
-                returnIntent.putExtra("token", token.getId());
-                returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
-                setResult(RESULT_OK, returnIntent);
-                finish();
+                if (response.isSuccessful()) {
+
+                    Intent returnIntent = new Intent();
+                    returnIntent.putExtra("token", response.body().getId());
+                    returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
+                    setResult(RESULT_OK, returnIntent);
+                    finish();
+
+                } else {
+
+                    mExceptionOnMethod = "getCreateTokenCallback";
+                    ApiUtil.finishWithApiException(mActivity, response);
+                }
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void onFailure(Call<Token> call, Throwable t) {
 
                 mExceptionOnMethod = "getCreateTokenCallback";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, t);
             }
         };
     }

@@ -30,9 +30,9 @@ import com.mercadopago.util.MercadoPagoUtil;
 
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class CardActivity extends AppCompatActivity {
 
@@ -238,36 +238,45 @@ public class CardActivity extends AppCompatActivity {
 
         LayoutUtil.showProgressLayout(mActivity);
 
-        mMercadoPago.getIdentificationTypes(new Callback<List<IdentificationType>>() {
+        Call<List<IdentificationType>> call = mMercadoPago.getIdentificationTypes();
+        call.enqueue(new Callback<List<IdentificationType>>() {
             @Override
-            public void success(List<IdentificationType> identificationTypes, Response response) {
+            public void onResponse(Call<List<IdentificationType>> call, Response<List<IdentificationType>> response) {
 
-                mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, identificationTypes));
+                if (response.isSuccessful()) {
 
-                // Set form "Go" button
-                setFormGoButton(mIdentificationNumber);
-
-                LayoutUtil.showRegularLayout(mActivity);
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-
-                if ((error.getResponse() != null) && (error.getResponse().getStatus() == 404)) {
-
-                    // No identification type for this country
-                    mIdentificationLayout.setVisibility(View.GONE);
+                    mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, response.body()));
 
                     // Set form "Go" button
-                    setFormGoButton(mCardHolderName);
+                    setFormGoButton(mIdentificationNumber);
 
                     LayoutUtil.showRegularLayout(mActivity);
 
                 } else {
 
-                    mExceptionOnMethod = "getIdentificationTypesAsync";
-                    ApiUtil.finishWithApiException(mActivity, error);
+                    if (response.code() == 404) {
+
+                        // No identification type for this country
+                        mIdentificationLayout.setVisibility(View.GONE);
+
+                        // Set form "Go" button
+                        setFormGoButton(mCardHolderName);
+
+                        LayoutUtil.showRegularLayout(mActivity);
+
+                    } else {
+
+                        mExceptionOnMethod = "getIdentificationTypesAsync";
+                        ApiUtil.finishWithApiException(mActivity, response);
+                    }
                 }
+            }
+
+            @Override
+            public void onFailure(Call<List<IdentificationType>> call, Throwable t) {
+
+                mExceptionOnMethod = "getIdentificationTypesAsync";
+                ApiUtil.finishWithApiException(mActivity, t);
             }
         });
     }
@@ -276,22 +285,31 @@ public class CardActivity extends AppCompatActivity {
 
         LayoutUtil.showProgressLayout(mActivity);
 
-        mMercadoPago.createToken(mCardToken, new Callback<Token>() {
+        Call<Token> call = mMercadoPago.createToken(mCardToken);
+        call.enqueue(new Callback<Token>() {
             @Override
-            public void success(Token token, Response response) {
+            public void onResponse(Call<Token> call, Response<Token> response) {
 
-                Intent returnIntent = new Intent();
-                returnIntent.putExtra("token", token.getId());
-                returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mPaymentMethod));
-                setResult(RESULT_OK, returnIntent);
-                finish();
+                if (response.isSuccessful()) {
+
+                    Intent returnIntent = new Intent();
+                    returnIntent.putExtra("token", response.body().getId());
+                    returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mPaymentMethod));
+                    setResult(RESULT_OK, returnIntent);
+                    finish();
+
+                } else {
+
+                    mExceptionOnMethod = "createTokenAsync";
+                    ApiUtil.finishWithApiException(mActivity, response);
+                }
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void onFailure(Call<Token> call, Throwable t) {
 
                 mExceptionOnMethod = "createTokenAsync";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, t);
             }
         });
     }

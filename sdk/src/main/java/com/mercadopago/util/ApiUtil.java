@@ -10,35 +10,26 @@ import android.widget.Toast;
 import com.mercadopago.R;
 import com.mercadopago.model.ApiException;
 
-import retrofit.RetrofitError;
+import java.lang.annotation.Annotation;
+
+import okhttp3.ResponseBody;
+import retrofit2.Converter;
+import retrofit2.Response;
+import retrofit2.Retrofit;
 
 public class ApiUtil {
 
-    public static ApiException getApiException(RetrofitError error) {
+    public static void finishWithApiException(Activity activity, Response<?> response) {
 
-        ApiException apiException = null;
-        try {
-            apiException = (ApiException) error.getBodyAs(ApiException.class);
-
-        } catch (Exception ex) {
-            // do nothing
-        }
-
-        if (apiException == null) {
-            apiException = new ApiException();
-            try {
-                apiException.setMessage(error.getMessage());
-                apiException.setStatus(error.getResponse().getStatus());
-
-            } catch (Exception ex) {
-                // do nothing
-            }
-        }
-
-        return apiException;
+        finishWithApiException(activity, getApiException(response));
     }
 
-    public static void finishWithApiException(Activity activity, RetrofitError error) {
+    public static void finishWithApiException(Activity activity, Throwable throwable) {
+
+        finishWithApiException(activity, getApiException(throwable));
+    }
+
+    public static void finishWithApiException(Activity activity, ApiException apiException) {
 
         if (!ApiUtil.checkConnection(activity)) {  // check for connection error
 
@@ -51,7 +42,6 @@ public class ApiUtil {
             // Return with api exception
             Intent intent = new Intent();
             activity.setResult(activity.RESULT_CANCELED, intent);
-            ApiException apiException = getApiException(error);
             intent.putExtra("apiException", JsonUtil.getInstance().toJson(apiException));
             activity.finish();
         }
@@ -84,5 +74,35 @@ public class ApiUtil {
         else {
             return false;
         }
+    }
+
+    private static ApiException getApiException(Response<?> response) {
+
+        Converter<ResponseBody, ApiException> converter =
+                new Retrofit.Builder().build()
+                        .responseBodyConverter(ApiException.class, new Annotation[0]);
+
+        ApiException apiException = null;
+        try {
+            apiException = converter.convert(response.errorBody());
+
+        } catch (Exception ex) {
+            // do nothing
+        }
+
+        return apiException;
+    }
+
+    private static ApiException getApiException(Throwable throwable) {
+
+        ApiException apiException = new ApiException();
+        try {
+            apiException.setMessage(throwable.getMessage());
+
+        } catch (Exception ex) {
+            // do nothing
+        }
+
+        return apiException;
     }
 }

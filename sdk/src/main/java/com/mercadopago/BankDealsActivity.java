@@ -17,9 +17,9 @@ import com.mercadopago.util.LayoutUtil;
 
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class BankDealsActivity extends AppCompatActivity {
 
@@ -73,28 +73,36 @@ public class BankDealsActivity extends AppCompatActivity {
     private void getBankDeals() {
 
         LayoutUtil.showProgressLayout(mActivity);
-        mMercadoPago.getBankDeals(new Callback<List<BankDeal>>() {
+        Call<List<BankDeal>> call = mMercadoPago.getBankDeals();
+        call.enqueue(new Callback<List<BankDeal>>() {
             @Override
-            public void success(List<BankDeal> bankDeals, Response response) {
+            public void onResponse(Call<List<BankDeal>> call, Response<List<BankDeal>> response) {
 
-                mRecyclerView.setAdapter(new BankDealsAdapter(mActivity, bankDeals, new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
+                if (response.isSuccessful()) {
 
-                        BankDeal selectedBankDeal = (BankDeal) view.getTag();
-                        Intent intent = new Intent(mActivity, TermsAndConditionsActivity.class);
-                        intent.putExtra("termsAndConditions", selectedBankDeal.getLegals());
-                        startActivity(intent);
-                    }
-                }));
+                    mRecyclerView.setAdapter(new BankDealsAdapter(mActivity, response.body(), new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
 
-                LayoutUtil.showRegularLayout(mActivity);
+                            BankDeal selectedBankDeal = (BankDeal) view.getTag();
+                            Intent intent = new Intent(mActivity, TermsAndConditionsActivity.class);
+                            intent.putExtra("termsAndConditions", selectedBankDeal.getLegals());
+                            startActivity(intent);
+                        }
+                    }));
+
+                    LayoutUtil.showRegularLayout(mActivity);
+
+                } else {
+
+                    ApiUtil.finishWithApiException(mActivity, response);
+                }
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void onFailure(Call<List<BankDeal>> call, Throwable t) {
 
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, t);
             }
         });
     }

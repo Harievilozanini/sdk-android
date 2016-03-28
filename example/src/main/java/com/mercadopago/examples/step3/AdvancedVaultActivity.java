@@ -26,9 +26,9 @@ import com.mercadopago.util.MercadoPagoUtil;
 import java.math.BigDecimal;
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class AdvancedVaultActivity extends SimpleVaultActivity {
 
@@ -282,41 +282,50 @@ public class AdvancedVaultActivity extends SimpleVaultActivity {
 
         if (bin.length() == MercadoPago.BIN_LENGTH) {
             LayoutUtil.showProgressLayout(mActivity);
-            mMercadoPago.getInstallments(bin, amount, issuerId, paymentTypeId, new Callback<List<Installment>>() {
+            Call<List<Installment>> call = mMercadoPago.getInstallments(bin, amount, issuerId, paymentTypeId);
+            call.enqueue(new Callback<List<Installment>>() {
                 @Override
-                public void success(List<Installment> installments, Response response) {
+                public void onResponse(Call<List<Installment>> call, Response<List<Installment>> response) {
 
-                    LayoutUtil.showRegularLayout(mActivity);
+                    if (response.isSuccessful()) {
 
-                    if ((installments.size() > 0) && (installments.get(0).getPayerCosts().size() > 0)) {
+                        LayoutUtil.showRegularLayout(mActivity);
 
-                        // Set installments card data and visibility
-                        mPayerCosts = installments.get(0).getPayerCosts();
-                        mSelectedPayerCost = installments.get(0).getPayerCosts().get(0);
+                        if ((response.body().size() > 0) && (response.body().get(0).getPayerCosts().size() > 0)) {
 
-                        if (installments.get(0).getPayerCosts().size() == 1) {
+                            // Set installments card data and visibility
+                            mPayerCosts = response.body().get(0).getPayerCosts();
+                            mSelectedPayerCost = response.body().get(0).getPayerCosts().get(0);
 
-                            mInstallmentsCard.setVisibility(View.GONE);
+                            if (response.body().get(0).getPayerCosts().size() == 1) {
+
+                                mInstallmentsCard.setVisibility(View.GONE);
+
+                            } else {
+
+                                mInstallmentsText.setText(mSelectedPayerCost.getRecommendedMessage());
+                                mInstallmentsCard.setVisibility(View.VISIBLE);
+                            }
+
+                            // Set button visibility
+                            mSubmitButton.setEnabled(true);
 
                         } else {
-
-                            mInstallmentsText.setText(mSelectedPayerCost.getRecommendedMessage());
-                            mInstallmentsCard.setVisibility(View.VISIBLE);
+                            Toast.makeText(getApplicationContext(), getString(com.mercadopago.R.string.mpsdk_invalid_pm_for_current_amount), Toast.LENGTH_LONG).show();
                         }
 
-                        // Set button visibility
-                        mSubmitButton.setEnabled(true);
-
                     } else {
-                        Toast.makeText(getApplicationContext(), getString(com.mercadopago.R.string.mpsdk_invalid_pm_for_current_amount), Toast.LENGTH_LONG).show();
+
+                        mExceptionOnMethod = "getInstallmentsAsync";
+                        ApiUtil.finishWithApiException(mActivity, response);
                     }
                 }
 
                 @Override
-                public void failure(RetrofitError error) {
+                public void onFailure(Call<List<Installment>> call, Throwable t) {
 
                     mExceptionOnMethod = "getInstallmentsAsync";
-                    ApiUtil.finishWithApiException(mActivity, error);
+                    ApiUtil.finishWithApiException(mActivity, t);
                 }
             });
         }
@@ -365,24 +374,32 @@ public class AdvancedVaultActivity extends SimpleVaultActivity {
 
         return new Callback<Token>() {
             @Override
-            public void success(Token o, Response response) {
+            public void onResponse(Call<Token> call, Response<Token> response) {
 
-                Intent returnIntent = new Intent();
-                returnIntent.putExtra("token", o.getId());
-                if (mSelectedIssuer != null) {
-                    returnIntent.putExtra("issuerId", Long.toString(mSelectedIssuer.getId()));
+                if (response.isSuccessful()) {
+
+                    Intent returnIntent = new Intent();
+                    returnIntent.putExtra("token", response.body().getId());
+                    if (mSelectedIssuer != null) {
+                        returnIntent.putExtra("issuerId", Long.toString(mSelectedIssuer.getId()));
+                    }
+                    returnIntent.putExtra("installments", Integer.toString(mSelectedPayerCost.getInstallments()));
+                    returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
+                    setResult(RESULT_OK, returnIntent);
+                    finish();
+
+                } else {
+
+                    mExceptionOnMethod = "getCreateTokenCallback";
+                    ApiUtil.finishWithApiException(mActivity, response);
                 }
-                returnIntent.putExtra("installments", Integer.toString(mSelectedPayerCost.getInstallments()));
-                returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
-                setResult(RESULT_OK, returnIntent);
-                finish();
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void onFailure(Call<Token> call, Throwable t) {
 
                 mExceptionOnMethod = "getCreateTokenCallback";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, t);
             }
         };
     }

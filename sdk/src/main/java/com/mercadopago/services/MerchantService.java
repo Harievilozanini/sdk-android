@@ -5,21 +5,21 @@ import com.mercadopago.model.Discount;
 import com.mercadopago.model.MerchantPayment;
 import com.mercadopago.model.Payment;
 
-import retrofit.Callback;
-import retrofit.http.Body;
-import retrofit.http.EncodedPath;
-import retrofit.http.GET;
-import retrofit.http.POST;
-import retrofit.http.Query;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface MerchantService {
 
     @GET("/{uri}")
-    void getCustomer(@EncodedPath("uri") String uri, @Query("merchant_access_token") String merchantAccessToken, Callback<Customer> callback);
+    Call<Customer> getCustomer(@Path(value = "uri", encoded = false) String uri, @Query("merchant_access_token") String merchantAccessToken);
 
     @POST("/{uri}")
-    void createPayment(@EncodedPath("uri") String uri, @Body MerchantPayment body, Callback<Payment> callback);
+    Call<Payment> createPayment(@Path(value = "uri", encoded = false) String uri, @Body MerchantPayment body);
 
     @GET("/{uri}")
-    void getDiscount(@EncodedPath("uri") String uri, @Query("merchant_access_token") String merchantAccessToken, @Query("item.id") String itemId, @Query("item.quantity") Integer itemQuantity, Callback<Discount> callback);
+    Call<Discount> getDiscount(@Path(value = "uri", encoded = false) String uri, @Query("merchant_access_token") String merchantAccessToken, @Query("item.id") String itemId, @Query("item.quantity") Integer itemQuantity);
 }

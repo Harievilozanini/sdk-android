@@ -2,7 +2,6 @@ package com.mercadopago;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -20,9 +19,9 @@ import com.mercadopago.util.LayoutUtil;
 
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class IssuersActivity extends AppCompatActivity {
 
@@ -90,29 +89,35 @@ public class IssuersActivity extends AppCompatActivity {
                 .setPublicKey(merchantPublicKey)
                 .build();
 
-        mercadoPago.getIssuers(mPaymentMethod.getId(), new Callback<List<Issuer>>() {
+        Call<List<Issuer>> call = mercadoPago.getIssuers(mPaymentMethod.getId());
+        call.enqueue(new Callback<List<Issuer>>() {
             @Override
-            public void success(List<Issuer> issuers, Response response) {
+            public void onResponse(Call<List<Issuer>> call, Response<List<Issuer>> response) {
 
-                mRecyclerView.setAdapter(new IssuersAdapter(issuers, new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
+                if (response.isSuccessful()) {
+                    mRecyclerView.setAdapter(new IssuersAdapter(response.body(), new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
 
-                        // Return to parent
-                        Intent returnIntent = new Intent();
-                        Issuer selectedIssuer = (Issuer) view.getTag();
-                        returnIntent.putExtra("issuer", JsonUtil.getInstance().toJson(selectedIssuer));
-                        setResult(RESULT_OK, returnIntent);
-                        finish();
-                    }
-                }));
-                LayoutUtil.showRegularLayout(mActivity);
+                            // Return to parent
+                            Intent returnIntent = new Intent();
+                            Issuer selectedIssuer = (Issuer) view.getTag();
+                            returnIntent.putExtra("issuer", JsonUtil.getInstance().toJson(selectedIssuer));
+                            setResult(RESULT_OK, returnIntent);
+                            finish();
+                        }
+                    }));
+                    LayoutUtil.showRegularLayout(mActivity);
+                } else {
+
+                    ApiUtil.finishWithApiException(mActivity, response);
+                }
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void onFailure(Call<List<Issuer>> call, Throwable t) {
 
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, t);
             }
         });
     }

@@ -1,10 +1,7 @@
 package com.mercadopago.examples.utils;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.os.Bundle;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -26,11 +23,10 @@ import com.mercadopago.util.LayoutUtil;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Locale;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ExamplesUtils {
 
@@ -131,22 +127,31 @@ public class ExamplesUtils {
                     token, paymentMethodId, campaignId, DUMMY_MERCHANT_ACCESS_TOKEN);
 
             // Create payment
-            MerchantServer.createPayment(activity, DUMMY_MERCHANT_BASE_URL, DUMMY_MERCHANT_CREATE_PAYMENT_URI, payment, new Callback<Payment>() {
+            Call<Payment> call = MerchantServer.createPayment(activity, DUMMY_MERCHANT_BASE_URL, DUMMY_MERCHANT_CREATE_PAYMENT_URI, payment);
+            call.enqueue(new Callback<Payment>() {
                 @Override
-                public void success(Payment payment, Response response) {
+                public void onResponse(Call<Payment> call, Response<Payment> response) {
 
-                    new MercadoPago.StartActivityBuilder()
-                            .setActivity(activity)
-                            .setPayment(payment)
-                            .setPaymentMethod(paymentMethod)
-                            .startCongratsActivity();
+                    if (response.isSuccessful()) {
+
+                        new MercadoPago.StartActivityBuilder()
+                                .setActivity(activity)
+                                .setPayment(response.body())
+                                .setPaymentMethod(paymentMethod)
+                                .startCongratsActivity();
+
+                    } else {
+
+                        LayoutUtil.showRegularLayout(activity);
+                        Toast.makeText(activity, response.message(), Toast.LENGTH_LONG).show();
+                    }
                 }
 
                 @Override
-                public void failure(RetrofitError error) {
+                public void onFailure(Call<Payment> call, Throwable t) {
 
                     LayoutUtil.showRegularLayout(activity);
-                    Toast.makeText(activity, error.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(activity, t.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         } else {

@@ -24,9 +24,9 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class PaymentMethodsActivity extends AppCompatActivity {
 
@@ -120,29 +120,37 @@ public class PaymentMethodsActivity extends AppCompatActivity {
                 .setPublicKey(merchantPublicKey)
                 .build();
 
-        mercadoPago.getPaymentMethods(new Callback <List<PaymentMethod>>() {
+        Call<List<PaymentMethod>> call = mercadoPago.getPaymentMethods();
+        call.enqueue(new Callback<List<PaymentMethod>>() {
             @Override
-            public void success(List<PaymentMethod> paymentMethods, Response response) {
+            public void onResponse(Call<List<PaymentMethod>> call, Response<List<PaymentMethod>> response) {
 
-                mRecyclerView.setAdapter(new PaymentMethodsAdapter(mActivity, getSupportedPaymentMethods(paymentMethods), new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
+                if (response.isSuccessful()) {
 
-                        // Return to parent
-                        Intent returnIntent = new Intent();
-                        PaymentMethod selectedPaymentMethod = (PaymentMethod) view.getTag();
-                        returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(selectedPaymentMethod));
-                        setResult(RESULT_OK, returnIntent);
-                        finish();
-                    }
-                }));
-                LayoutUtil.showRegularLayout(mActivity);
+                    mRecyclerView.setAdapter(new PaymentMethodsAdapter(mActivity, getSupportedPaymentMethods(response.body()), new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+
+                            // Return to parent
+                            Intent returnIntent = new Intent();
+                            PaymentMethod selectedPaymentMethod = (PaymentMethod) view.getTag();
+                            returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(selectedPaymentMethod));
+                            setResult(RESULT_OK, returnIntent);
+                            finish();
+                        }
+                    }));
+                    LayoutUtil.showRegularLayout(mActivity);
+
+                } else {
+
+                    ApiUtil.finishWithApiException(mActivity, response);
+                }
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void onFailure(Call<List<PaymentMethod>> call, Throwable t) {
 
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, t);
             }
         });
     }
