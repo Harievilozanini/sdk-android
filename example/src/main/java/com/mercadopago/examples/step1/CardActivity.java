@@ -16,9 +16,11 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.adapters.IdentificationTypesAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.examples.R;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.CardToken;
 import com.mercadopago.model.IdentificationType;
 import com.mercadopago.model.PaymentMethod;
@@ -238,45 +240,37 @@ public class CardActivity extends AppCompatActivity {
 
         LayoutUtil.showProgressLayout(mActivity);
 
-        Call<List<IdentificationType>> call = mMercadoPago.getIdentificationTypes();
-        call.enqueue(new Callback<List<IdentificationType>>() {
+        ErrorHandlingCallAdapter.MyCall<List<IdentificationType>> call = mMercadoPago.getIdentificationTypes();
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<IdentificationType>>() {
             @Override
-            public void onResponse(Call<List<IdentificationType>> call, Response<List<IdentificationType>> response) {
+            public void success(Response<List<IdentificationType>> response) {
 
-                if (response.isSuccessful()) {
+                mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, response.body()));
 
-                    mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, response.body()));
+                // Set form "Go" button
+                setFormGoButton(mIdentificationNumber);
+
+                LayoutUtil.showRegularLayout(mActivity);
+            }
+
+            @Override
+            public void failure(ApiException apiException) {
+
+                if (apiException.getStatus() == 404) {
+
+                    // No identification type for this country
+                    mIdentificationLayout.setVisibility(View.GONE);
 
                     // Set form "Go" button
-                    setFormGoButton(mIdentificationNumber);
+                    setFormGoButton(mCardHolderName);
 
                     LayoutUtil.showRegularLayout(mActivity);
 
                 } else {
 
-                    if (response.code() == 404) {
-
-                        // No identification type for this country
-                        mIdentificationLayout.setVisibility(View.GONE);
-
-                        // Set form "Go" button
-                        setFormGoButton(mCardHolderName);
-
-                        LayoutUtil.showRegularLayout(mActivity);
-
-                    } else {
-
-                        mExceptionOnMethod = "getIdentificationTypesAsync";
-                        ApiUtil.finishWithApiException(mActivity, response);
-                    }
+                    mExceptionOnMethod = "getIdentificationTypesAsync";
+                    ApiUtil.finishWithApiException(mActivity, apiException);
                 }
-            }
-
-            @Override
-            public void onFailure(Call<List<IdentificationType>> call, Throwable t) {
-
-                mExceptionOnMethod = "getIdentificationTypesAsync";
-                ApiUtil.finishWithApiException(mActivity, t);
             }
         });
     }
@@ -285,31 +279,23 @@ public class CardActivity extends AppCompatActivity {
 
         LayoutUtil.showProgressLayout(mActivity);
 
-        Call<Token> call = mMercadoPago.createToken(mCardToken);
-        call.enqueue(new Callback<Token>() {
+        ErrorHandlingCallAdapter.MyCall<Token> call = mMercadoPago.createToken(mCardToken);
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<Token>() {
             @Override
-            public void onResponse(Call<Token> call, Response<Token> response) {
+            public void success(Response<Token> response) {
 
-                if (response.isSuccessful()) {
-
-                    Intent returnIntent = new Intent();
-                    returnIntent.putExtra("token", response.body().getId());
-                    returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mPaymentMethod));
-                    setResult(RESULT_OK, returnIntent);
-                    finish();
-
-                } else {
-
-                    mExceptionOnMethod = "createTokenAsync";
-                    ApiUtil.finishWithApiException(mActivity, response);
-                }
+                Intent returnIntent = new Intent();
+                returnIntent.putExtra("token", response.body().getId());
+                returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mPaymentMethod));
+                setResult(RESULT_OK, returnIntent);
+                finish();
             }
 
             @Override
-            public void onFailure(Call<Token> call, Throwable t) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "createTokenAsync";
-                ApiUtil.finishWithApiException(mActivity, t);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }

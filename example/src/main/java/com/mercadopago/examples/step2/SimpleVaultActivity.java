@@ -15,9 +15,11 @@ import android.widget.TextView;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mercadopago.adapters.CustomerCardsAdapter;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.core.MerchantServer;
 import com.mercadopago.examples.R;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.Card;
 import com.mercadopago.model.CardToken;
 import com.mercadopago.model.Customer;
@@ -278,28 +280,20 @@ public class SimpleVaultActivity extends AppCompatActivity {
     protected void getCustomerCardsAsync() {
 
         LayoutUtil.showProgressLayout(mActivity);
-        Call<Customer> call = MerchantServer.getCustomer(this, mMerchantBaseUrl, mMerchantGetCustomerUri, mMerchantAccessToken);
-        call.enqueue(new Callback<Customer>() {
+        ErrorHandlingCallAdapter.MyCall<Customer> call = MerchantServer.getCustomer(this, mMerchantBaseUrl, mMerchantGetCustomerUri, mMerchantAccessToken);
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<Customer>() {
             @Override
-            public void onResponse(Call<Customer> call, Response<Customer> response) {
+            public void success(Response<Customer> response) {
 
-                if (response.isSuccessful()) {
-
-                    mCards = response.body().getCards();
-                    LayoutUtil.showRegularLayout(mActivity);
-
-                } else {
-
-                    mExceptionOnMethod = "getCustomerCardsAsync";
-                    ApiUtil.finishWithApiException(mActivity, response);
-                }
+                mCards = response.body().getCards();
+                LayoutUtil.showRegularLayout(mActivity);
             }
 
             @Override
-            public void onFailure(Call<Customer> call, Throwable t) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "getCustomerCardsAsync";
-                ApiUtil.finishWithApiException(mActivity, t);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }
@@ -410,7 +404,7 @@ public class SimpleVaultActivity extends AppCompatActivity {
 
         // Create token
         LayoutUtil.showProgressLayout(mActivity);
-        Call<Token> call = mMercadoPago.createToken(mCardToken);
+        ErrorHandlingCallAdapter.MyCall<Token> call = mMercadoPago.createToken(mCardToken);
         call.enqueue(getCreateTokenCallback());
     }
 
@@ -431,36 +425,28 @@ public class SimpleVaultActivity extends AppCompatActivity {
 
         // Create token
         LayoutUtil.showProgressLayout(mActivity);
-        Call<Token> call = mMercadoPago.createToken(savedCardToken);
+        ErrorHandlingCallAdapter.MyCall<Token> call = mMercadoPago.createToken(savedCardToken);
         call.enqueue(getCreateTokenCallback());
     }
 
-    protected Callback<Token> getCreateTokenCallback() {
+    protected ErrorHandlingCallAdapter.MyCallback<Token> getCreateTokenCallback() {
 
-        return new Callback<Token>() {
+        return new ErrorHandlingCallAdapter.MyCallback<Token>() {
             @Override
-            public void onResponse(Call<Token> call, Response<Token> response) {
+            public void success(Response<Token> response) {
 
-                if (response.isSuccessful()) {
-
-                    Intent returnIntent = new Intent();
-                    returnIntent.putExtra("token", response.body().getId());
-                    returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
-                    setResult(RESULT_OK, returnIntent);
-                    finish();
-
-                } else {
-
-                    mExceptionOnMethod = "getCreateTokenCallback";
-                    ApiUtil.finishWithApiException(mActivity, response);
-                }
+                Intent returnIntent = new Intent();
+                returnIntent.putExtra("token", response.body().getId());
+                returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
+                setResult(RESULT_OK, returnIntent);
+                finish();
             }
 
             @Override
-            public void onFailure(Call<Token> call, Throwable t) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "getCreateTokenCallback";
-                ApiUtil.finishWithApiException(mActivity, t);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         };
     }

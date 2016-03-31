@@ -12,9 +12,11 @@ import android.view.View;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.adapters.PaymentMethodsAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.decorations.DividerItemDecoration;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.PaymentMethod;
 import com.mercadopago.util.ApiUtil;
 import com.mercadopago.util.JsonUtil;
@@ -120,37 +122,30 @@ public class PaymentMethodsActivity extends AppCompatActivity {
                 .setPublicKey(merchantPublicKey)
                 .build();
 
-        Call<List<PaymentMethod>> call = mercadoPago.getPaymentMethods();
-        call.enqueue(new Callback<List<PaymentMethod>>() {
+        ErrorHandlingCallAdapter.MyCall<List<PaymentMethod>> call = mercadoPago.getPaymentMethods();
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<PaymentMethod>>() {
             @Override
-            public void onResponse(Call<List<PaymentMethod>> call, Response<List<PaymentMethod>> response) {
+            public void success(Response<List<PaymentMethod>> response) {
 
-                if (response.isSuccessful()) {
+                mRecyclerView.setAdapter(new PaymentMethodsAdapter(mActivity, getSupportedPaymentMethods(response.body()), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
 
-                    mRecyclerView.setAdapter(new PaymentMethodsAdapter(mActivity, getSupportedPaymentMethods(response.body()), new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-
-                            // Return to parent
-                            Intent returnIntent = new Intent();
-                            PaymentMethod selectedPaymentMethod = (PaymentMethod) view.getTag();
-                            returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(selectedPaymentMethod));
-                            setResult(RESULT_OK, returnIntent);
-                            finish();
-                        }
-                    }));
-                    LayoutUtil.showRegularLayout(mActivity);
-
-                } else {
-
-                    ApiUtil.finishWithApiException(mActivity, response);
-                }
+                        // Return to parent
+                        Intent returnIntent = new Intent();
+                        PaymentMethod selectedPaymentMethod = (PaymentMethod) view.getTag();
+                        returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(selectedPaymentMethod));
+                        setResult(RESULT_OK, returnIntent);
+                        finish();
+                    }
+                }));
+                LayoutUtil.showRegularLayout(mActivity);
             }
 
             @Override
-            public void onFailure(Call<List<PaymentMethod>> call, Throwable t) {
+            public void failure(ApiException apiException) {
 
-                ApiUtil.finishWithApiException(mActivity, t);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }

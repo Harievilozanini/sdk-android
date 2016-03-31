@@ -13,6 +13,7 @@ import com.mercadopago.InstallmentsActivity;
 import com.mercadopago.IssuersActivity;
 import com.mercadopago.PaymentMethodsActivity;
 import com.mercadopago.VaultActivity;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.model.BankDeal;
 import com.mercadopago.model.Card;
 import com.mercadopago.model.CardToken;
@@ -30,12 +31,12 @@ import com.mercadopago.services.IdentificationService;
 import com.mercadopago.services.PaymentService;
 import com.mercadopago.util.HttpClientUtil;
 import com.mercadopago.util.JsonUtil;
+import com.mercadopago.util.ThreadingUtils;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.List;
 
-import retrofit2.Call;
 import retrofit2.Retrofit;
 
 public class MercadoPago {
@@ -72,10 +73,11 @@ public class MercadoPago {
                 .baseUrl(MP_API_BASE_URL)
                 .client(HttpClientUtil.getClient(this.mContext))
                 .addConverterFactory(JsonUtil.getInstance().getGsonConverterFactory())
+                .addCallAdapterFactory(new ErrorHandlingCallAdapter.ErrorHandlingCallAdapterFactory())
                 .build();
     }
 
-    public Call<Token> createToken(final SavedCardToken savedCardToken) {
+    public ErrorHandlingCallAdapter.MyCall<Token> createToken(final SavedCardToken savedCardToken) {
 
         if (this.mKeyType.equals(KEY_TYPE_PUBLIC)) {
             savedCardToken.setDevice(mContext);
@@ -86,7 +88,7 @@ public class MercadoPago {
         }
     }
 
-    public Call<Token> createToken(final CardToken cardToken) {
+    public ErrorHandlingCallAdapter.MyCall<Token> createToken(final CardToken cardToken) {
 
         if (this.mKeyType.equals(KEY_TYPE_PUBLIC)) {
             cardToken.setDevice(mContext);
@@ -97,7 +99,7 @@ public class MercadoPago {
         }
     }
 
-    public Call<List<PaymentMethod>> getPaymentMethods() {
+    public ErrorHandlingCallAdapter.MyCall<List<PaymentMethod>> getPaymentMethods() {
 
         if (this.mKeyType.equals(KEY_TYPE_PUBLIC)) {
             PaymentService service = mRestAdapterMPApi.create(PaymentService.class);
@@ -107,7 +109,7 @@ public class MercadoPago {
         }
     }
 
-    public Call<List<IdentificationType>> getIdentificationTypes() {
+    public ErrorHandlingCallAdapter.MyCall<List<IdentificationType>> getIdentificationTypes() {
 
         IdentificationService service = mRestAdapterMPApi.create(IdentificationService.class);
         if (this.mKeyType.equals(KEY_TYPE_PUBLIC)) {
@@ -117,7 +119,7 @@ public class MercadoPago {
         }
     }
 
-    public Call<List<Installment>> getInstallments(String bin, BigDecimal amount, Long issuerId, String paymentTypeId) {
+    public ErrorHandlingCallAdapter.MyCall<List<Installment>> getInstallments(String bin, BigDecimal amount, Long issuerId, String paymentTypeId) {
 
         if (this.mKeyType.equals(KEY_TYPE_PUBLIC)) {
             PaymentService service = mRestAdapterMPApi.create(PaymentService.class);
@@ -128,7 +130,7 @@ public class MercadoPago {
         }
     }
 
-    public Call<List<Issuer>> getIssuers(String paymentMethodId) {
+    public ErrorHandlingCallAdapter.MyCall<List<Issuer>> getIssuers(String paymentMethodId) {
 
         if (this.mKeyType.equals(KEY_TYPE_PUBLIC)) {
             PaymentService service = mRestAdapterMPApi.create(PaymentService.class);
@@ -138,7 +140,7 @@ public class MercadoPago {
         }
     }
 
-    public Call<List<BankDeal>> getBankDeals() {
+    public ErrorHandlingCallAdapter.MyCall<List<BankDeal>> getBankDeals() {
 
         if (this.mKeyType.equals(KEY_TYPE_PUBLIC)) {
             BankDealService service = mRestAdapterMPApi.create(BankDealService.class);

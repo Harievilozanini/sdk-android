@@ -128,7 +128,7 @@ public class VaultActivityWithNewCardTest extends BaseTest<VaultActivity> {
             fail("Regular start test failed, cause: " + ex.getMessage());
         }
     }
-/*
+
     public void testGetCustomerCardsFailure() {
 
         final VaultActivity activity = prepareActivity(StaticMock.DUMMY_MERCHANT_PUBLIC_KEY,
@@ -151,7 +151,7 @@ public class VaultActivityWithNewCardTest extends BaseTest<VaultActivity> {
             fail("Get customer cards failure test failed, cause: " + ex.getMessage());
         }
     }
-*/
+
     public void testGetPaymentMethodFailure() {
 
         final VaultActivity activity = prepareActivity(StaticMock.DUMMY_MERCHANT_PUBLIC_KEY,

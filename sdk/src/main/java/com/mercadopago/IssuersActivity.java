@@ -8,9 +8,11 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.adapters.IssuersAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.decorations.DividerItemDecoration;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.Issuer;
 import com.mercadopago.model.PaymentMethod;
 import com.mercadopago.util.ApiUtil;
@@ -89,35 +91,30 @@ public class IssuersActivity extends AppCompatActivity {
                 .setPublicKey(merchantPublicKey)
                 .build();
 
-        Call<List<Issuer>> call = mercadoPago.getIssuers(mPaymentMethod.getId());
-        call.enqueue(new Callback<List<Issuer>>() {
+        ErrorHandlingCallAdapter.MyCall<List<Issuer>> call = mercadoPago.getIssuers(mPaymentMethod.getId());
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<Issuer>>() {
             @Override
-            public void onResponse(Call<List<Issuer>> call, Response<List<Issuer>> response) {
+            public void success(Response<List<Issuer>> response) {
 
-                if (response.isSuccessful()) {
-                    mRecyclerView.setAdapter(new IssuersAdapter(response.body(), new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
+                mRecyclerView.setAdapter(new IssuersAdapter(response.body(), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
 
-                            // Return to parent
-                            Intent returnIntent = new Intent();
-                            Issuer selectedIssuer = (Issuer) view.getTag();
-                            returnIntent.putExtra("issuer", JsonUtil.getInstance().toJson(selectedIssuer));
-                            setResult(RESULT_OK, returnIntent);
-                            finish();
-                        }
-                    }));
-                    LayoutUtil.showRegularLayout(mActivity);
-                } else {
-
-                    ApiUtil.finishWithApiException(mActivity, response);
-                }
+                        // Return to parent
+                        Intent returnIntent = new Intent();
+                        Issuer selectedIssuer = (Issuer) view.getTag();
+                        returnIntent.putExtra("issuer", JsonUtil.getInstance().toJson(selectedIssuer));
+                        setResult(RESULT_OK, returnIntent);
+                        finish();
+                    }
+                }));
+                LayoutUtil.showRegularLayout(mActivity);
             }
 
             @Override
-            public void onFailure(Call<List<Issuer>> call, Throwable t) {
+            public void failure(ApiException apiException) {
 
-                ApiUtil.finishWithApiException(mActivity, t);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }

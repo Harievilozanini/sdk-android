@@ -6,12 +6,14 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.core.MerchantServer;
 import com.mercadopago.examples.step2.SimpleVaultActivity;
 import com.mercadopago.examples.step3.AdvancedVaultActivity;
 import com.mercadopago.examples.step1.CardActivity;
 import com.mercadopago.examples.step4.FinalVaultActivity;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.Discount;
 import com.mercadopago.model.Item;
 import com.mercadopago.model.MerchantPayment;
@@ -127,31 +129,23 @@ public class ExamplesUtils {
                     token, paymentMethodId, campaignId, DUMMY_MERCHANT_ACCESS_TOKEN);
 
             // Create payment
-            Call<Payment> call = MerchantServer.createPayment(activity, DUMMY_MERCHANT_BASE_URL, DUMMY_MERCHANT_CREATE_PAYMENT_URI, payment);
-            call.enqueue(new Callback<Payment>() {
+            ErrorHandlingCallAdapter.MyCall<Payment> call = MerchantServer.createPayment(activity, DUMMY_MERCHANT_BASE_URL, DUMMY_MERCHANT_CREATE_PAYMENT_URI, payment);
+            call.enqueue(new ErrorHandlingCallAdapter.MyCallback<Payment>() {
                 @Override
-                public void onResponse(Call<Payment> call, Response<Payment> response) {
+                public void success(Response<Payment> response) {
 
-                    if (response.isSuccessful()) {
-
-                        new MercadoPago.StartActivityBuilder()
-                                .setActivity(activity)
-                                .setPayment(response.body())
-                                .setPaymentMethod(paymentMethod)
-                                .startCongratsActivity();
-
-                    } else {
-
-                        LayoutUtil.showRegularLayout(activity);
-                        Toast.makeText(activity, response.message(), Toast.LENGTH_LONG).show();
-                    }
+                    new MercadoPago.StartActivityBuilder()
+                            .setActivity(activity)
+                            .setPayment(response.body())
+                            .setPaymentMethod(paymentMethod)
+                            .startCongratsActivity();
                 }
 
                 @Override
-                public void onFailure(Call<Payment> call, Throwable t) {
+                public void failure(ApiException apiException) {
 
                     LayoutUtil.showRegularLayout(activity);
-                    Toast.makeText(activity, t.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(activity, apiException.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         } else {

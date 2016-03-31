@@ -16,8 +16,10 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.adapters.IdentificationTypesAdapter;
 import com.mercadopago.core.MercadoPago;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.CardToken;
 import com.mercadopago.model.IdentificationType;
 import com.mercadopago.model.PaymentMethod;
@@ -258,47 +260,40 @@ public class NewCardActivity extends AppCompatActivity {
                 .setKey(mKey, mKeyType)
                 .build();
 
-        Call<List<IdentificationType>> call = mercadoPago.getIdentificationTypes();
-        call.enqueue(new Callback<List<IdentificationType>>() {
+        ErrorHandlingCallAdapter.MyCall<List<IdentificationType>> call = mercadoPago.getIdentificationTypes();
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<IdentificationType>>() {
             @Override
-            public void onResponse(Call<List<IdentificationType>> call, Response<List<IdentificationType>> response) {
+            public void success(Response<List<IdentificationType>> response) {
 
-                if (response.isSuccessful()) {
+                mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, response.body()));
 
-                    mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, response.body()));
+                // Set form "Go" button
+                if (mSecurityCodeLayout.getVisibility() == View.GONE) {
+                    setFormGoButton(mIdentificationNumber);
+                }
+
+                LayoutUtil.showRegularLayout(mActivity);
+            }
+
+            @Override
+            public void failure(ApiException apiException) {
+
+                if (apiException.getStatus() == 404) {
+
+                    // No identification type for this country
+                    mIdentificationLayout.setVisibility(View.GONE);
 
                     // Set form "Go" button
                     if (mSecurityCodeLayout.getVisibility() == View.GONE) {
-                        setFormGoButton(mIdentificationNumber);
+                        setFormGoButton(mCardHolderName);
                     }
 
                     LayoutUtil.showRegularLayout(mActivity);
 
                 } else {
 
-                    if (response.code() == 404) {
-
-                        // No identification type for this country
-                        mIdentificationLayout.setVisibility(View.GONE);
-
-                        // Set form "Go" button
-                        if (mSecurityCodeLayout.getVisibility() == View.GONE) {
-                            setFormGoButton(mCardHolderName);
-                        }
-
-                        LayoutUtil.showRegularLayout(mActivity);
-
-                    } else {
-
-                        ApiUtil.finishWithApiException(mActivity, response);
-                    }
+                    ApiUtil.finishWithApiException(mActivity, apiException);
                 }
-            }
-
-            @Override
-            public void onFailure(Call<List<IdentificationType>> call, Throwable t) {
-
-                ApiUtil.finishWithApiException(mActivity, t);
             }
         });
     }

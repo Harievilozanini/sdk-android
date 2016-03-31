@@ -8,9 +8,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mercadopago.adapters.CustomerCardsAdapter;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.examples.R;
 import com.mercadopago.examples.step2.SimpleVaultActivity;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.CardToken;
 import com.mercadopago.model.Installment;
 import com.mercadopago.model.Issuer;
@@ -282,50 +284,43 @@ public class AdvancedVaultActivity extends SimpleVaultActivity {
 
         if (bin.length() == MercadoPago.BIN_LENGTH) {
             LayoutUtil.showProgressLayout(mActivity);
-            Call<List<Installment>> call = mMercadoPago.getInstallments(bin, amount, issuerId, paymentTypeId);
-            call.enqueue(new Callback<List<Installment>>() {
+            ErrorHandlingCallAdapter.MyCall<List<Installment>> call = mMercadoPago.getInstallments(bin, amount, issuerId, paymentTypeId);
+            call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<Installment>>() {
                 @Override
-                public void onResponse(Call<List<Installment>> call, Response<List<Installment>> response) {
+                public void success(Response<List<Installment>> response) {
 
-                    if (response.isSuccessful()) {
+                    LayoutUtil.showRegularLayout(mActivity);
 
-                        LayoutUtil.showRegularLayout(mActivity);
+                    if ((response.body().size() > 0) && (response.body().get(0).getPayerCosts().size() > 0)) {
 
-                        if ((response.body().size() > 0) && (response.body().get(0).getPayerCosts().size() > 0)) {
+                        // Set installments card data and visibility
+                        mPayerCosts = response.body().get(0).getPayerCosts();
+                        mSelectedPayerCost = response.body().get(0).getPayerCosts().get(0);
 
-                            // Set installments card data and visibility
-                            mPayerCosts = response.body().get(0).getPayerCosts();
-                            mSelectedPayerCost = response.body().get(0).getPayerCosts().get(0);
+                        if (response.body().get(0).getPayerCosts().size() == 1) {
 
-                            if (response.body().get(0).getPayerCosts().size() == 1) {
-
-                                mInstallmentsCard.setVisibility(View.GONE);
-
-                            } else {
-
-                                mInstallmentsText.setText(mSelectedPayerCost.getRecommendedMessage());
-                                mInstallmentsCard.setVisibility(View.VISIBLE);
-                            }
-
-                            // Set button visibility
-                            mSubmitButton.setEnabled(true);
+                            mInstallmentsCard.setVisibility(View.GONE);
 
                         } else {
-                            Toast.makeText(getApplicationContext(), getString(com.mercadopago.R.string.mpsdk_invalid_pm_for_current_amount), Toast.LENGTH_LONG).show();
+
+                            mInstallmentsText.setText(mSelectedPayerCost.getRecommendedMessage());
+                            mInstallmentsCard.setVisibility(View.VISIBLE);
                         }
+
+                        // Set button visibility
+                        mSubmitButton.setEnabled(true);
 
                     } else {
 
-                        mExceptionOnMethod = "getInstallmentsAsync";
-                        ApiUtil.finishWithApiException(mActivity, response);
+                        Toast.makeText(getApplicationContext(), getString(com.mercadopago.R.string.mpsdk_invalid_pm_for_current_amount), Toast.LENGTH_LONG).show();
                     }
                 }
 
                 @Override
-                public void onFailure(Call<List<Installment>> call, Throwable t) {
+                public void failure(ApiException apiException) {
 
                     mExceptionOnMethod = "getInstallmentsAsync";
-                    ApiUtil.finishWithApiException(mActivity, t);
+                    ApiUtil.finishWithApiException(mActivity, apiException);
                 }
             });
         }
@@ -370,36 +365,28 @@ public class AdvancedVaultActivity extends SimpleVaultActivity {
     }
 
     @Override
-    protected Callback<Token> getCreateTokenCallback() {
+    protected ErrorHandlingCallAdapter.MyCallback<Token> getCreateTokenCallback() {
 
-        return new Callback<Token>() {
+        return new ErrorHandlingCallAdapter.MyCallback<Token>() {
             @Override
-            public void onResponse(Call<Token> call, Response<Token> response) {
+            public void success(Response<Token> response) {
 
-                if (response.isSuccessful()) {
-
-                    Intent returnIntent = new Intent();
-                    returnIntent.putExtra("token", response.body().getId());
-                    if (mSelectedIssuer != null) {
-                        returnIntent.putExtra("issuerId", Long.toString(mSelectedIssuer.getId()));
-                    }
-                    returnIntent.putExtra("installments", Integer.toString(mSelectedPayerCost.getInstallments()));
-                    returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
-                    setResult(RESULT_OK, returnIntent);
-                    finish();
-
-                } else {
-
-                    mExceptionOnMethod = "getCreateTokenCallback";
-                    ApiUtil.finishWithApiException(mActivity, response);
+                Intent returnIntent = new Intent();
+                returnIntent.putExtra("token", response.body().getId());
+                if (mSelectedIssuer != null) {
+                    returnIntent.putExtra("issuerId", Long.toString(mSelectedIssuer.getId()));
                 }
+                returnIntent.putExtra("installments", Integer.toString(mSelectedPayerCost.getInstallments()));
+                returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
+                setResult(RESULT_OK, returnIntent);
+                finish();
             }
 
             @Override
-            public void onFailure(Call<Token> call, Throwable t) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "getCreateTokenCallback";
-                ApiUtil.finishWithApiException(mActivity, t);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         };
     }

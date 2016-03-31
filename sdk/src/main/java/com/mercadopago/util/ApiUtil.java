@@ -14,16 +14,6 @@ import retrofit2.Response;
 
 public class ApiUtil {
 
-    public static void finishWithApiException(Activity activity, Response<?> response) {
-
-        finishWithApiException(activity, getApiException(response));
-    }
-
-    public static void finishWithApiException(Activity activity, Throwable throwable) {
-
-        finishWithApiException(activity, getApiException(throwable));
-    }
-
     public static void finishWithApiException(Activity activity, ApiException apiException) {
 
         if (!ApiUtil.checkConnection(activity)) {  // check for connection error
@@ -71,7 +61,7 @@ public class ApiUtil {
         }
     }
 
-    private static ApiException getApiException(Response<?> response) {
+    public static ApiException getApiException(Response<?> response) {
 
         ApiException apiException = null;
         try {
@@ -87,7 +77,7 @@ public class ApiUtil {
         return apiException;
     }
 
-    private static ApiException getApiException(Throwable throwable) {
+    public static ApiException getApiException(Throwable throwable) {
 
         ApiException apiException = new ApiException();
         try {

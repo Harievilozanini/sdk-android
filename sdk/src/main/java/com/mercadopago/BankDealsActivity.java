@@ -9,8 +9,10 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
 import com.mercadopago.adapters.BankDealsAdapter;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.decorations.DividerItemDecoration;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.BankDeal;
 import com.mercadopago.util.ApiUtil;
 import com.mercadopago.util.LayoutUtil;
@@ -73,36 +75,29 @@ public class BankDealsActivity extends AppCompatActivity {
     private void getBankDeals() {
 
         LayoutUtil.showProgressLayout(mActivity);
-        Call<List<BankDeal>> call = mMercadoPago.getBankDeals();
-        call.enqueue(new Callback<List<BankDeal>>() {
+        ErrorHandlingCallAdapter.MyCall<List<BankDeal>> call = mMercadoPago.getBankDeals();
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<BankDeal>>() {
             @Override
-            public void onResponse(Call<List<BankDeal>> call, Response<List<BankDeal>> response) {
+            public void success(Response<List<BankDeal>> response) {
 
-                if (response.isSuccessful()) {
+                mRecyclerView.setAdapter(new BankDealsAdapter(mActivity, response.body(), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
 
-                    mRecyclerView.setAdapter(new BankDealsAdapter(mActivity, response.body(), new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
+                        BankDeal selectedBankDeal = (BankDeal) view.getTag();
+                        Intent intent = new Intent(mActivity, TermsAndConditionsActivity.class);
+                        intent.putExtra("termsAndConditions", selectedBankDeal.getLegals());
+                        startActivity(intent);
+                    }
+                }));
 
-                            BankDeal selectedBankDeal = (BankDeal) view.getTag();
-                            Intent intent = new Intent(mActivity, TermsAndConditionsActivity.class);
-                            intent.putExtra("termsAndConditions", selectedBankDeal.getLegals());
-                            startActivity(intent);
-                        }
-                    }));
-
-                    LayoutUtil.showRegularLayout(mActivity);
-
-                } else {
-
-                    ApiUtil.finishWithApiException(mActivity, response);
-                }
+                LayoutUtil.showRegularLayout(mActivity);
             }
 
             @Override
-            public void onFailure(Call<List<BankDeal>> call, Throwable t) {
+            public void failure(ApiException apiException) {
 
-                ApiUtil.finishWithApiException(mActivity, t);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }
