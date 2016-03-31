@@ -12,7 +12,6 @@ import com.mercadopago.util.JsonUtil;
 
 import retrofit2.Call;
 import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MerchantServer {
 
@@ -44,7 +43,7 @@ public class MerchantServer {
         return new Retrofit.Builder()
                 .baseUrl(endPoint)
                 .client(HttpClientUtil.getClient(context))
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(JsonUtil.getInstance().getGsonConverterFactory())
                 .build();
     }
 

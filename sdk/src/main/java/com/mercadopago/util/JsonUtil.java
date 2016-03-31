@@ -4,6 +4,8 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import retrofit2.converter.gson.GsonConverterFactory;
+
 public class JsonUtil {
 
     private static JsonUtil mInstance = null;
@@ -33,5 +35,10 @@ public class JsonUtil {
     public Gson getGson() {
 
         return mGson;
+    }
+
+    public GsonConverterFactory getGsonConverterFactory() {
+
+        return GsonConverterFactory.create(mGson);
     }
 }

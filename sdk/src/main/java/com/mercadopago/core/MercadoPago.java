@@ -37,7 +37,6 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MercadoPago {
 
@@ -72,7 +71,7 @@ public class MercadoPago {
         mRestAdapterMPApi = new Retrofit.Builder()
                 .baseUrl(MP_API_BASE_URL)
                 .client(HttpClientUtil.getClient(this.mContext))
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(JsonUtil.getInstance().getGsonConverterFactory())
                 .build();
     }
 

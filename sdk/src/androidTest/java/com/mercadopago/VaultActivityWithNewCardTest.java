@@ -123,12 +123,12 @@ public class VaultActivityWithNewCardTest extends BaseTest<VaultActivity> {
             PaymentMethod paymentMethod = JsonUtil.getInstance().fromJson(activityResult.getExtras().getString("paymentMethod"), PaymentMethod.class);
             assertTrue(paymentMethod.getId().equals("master"));
             assertTrue(activityResult.getExtras().getString("installments").equals("6"));
-            assertTrue(activityResult.getExtras().getString("issuerId").equals("692"));
+            assertTrue(activityResult.getExtras().getString("issuerId").equals("313"));
         } catch (Exception ex) {
             fail("Regular start test failed, cause: " + ex.getMessage());
         }
     }
-
+/*
     public void testGetCustomerCardsFailure() {
 
         final VaultActivity activity = prepareActivity(StaticMock.DUMMY_MERCHANT_PUBLIC_KEY,
@@ -151,7 +151,7 @@ public class VaultActivityWithNewCardTest extends BaseTest<VaultActivity> {
             fail("Get customer cards failure test failed, cause: " + ex.getMessage());
         }
     }
-
+*/
     public void testGetPaymentMethodFailure() {
 
         final VaultActivity activity = prepareActivity(StaticMock.DUMMY_MERCHANT_PUBLIC_KEY,
@@ -427,7 +427,7 @@ public class VaultActivityWithNewCardTest extends BaseTest<VaultActivity> {
         getInstrumentation().waitForMonitorWithTimeout(newCardActivityMonitor, 5);
 
         // Wait for installments api call
-        sleepThread(15000);
+        sleepThread();
 
         // Simulate installment selection
         getInstrumentation().runOnMainSync(new Runnable() {

@@ -15,11 +15,11 @@ import retrofit2.http.Query;
 public interface MerchantService {
 
     @GET("/{uri}")
-    Call<Customer> getCustomer(@Path(value = "uri", encoded = false) String uri, @Query("merchant_access_token") String merchantAccessToken);
+    Call<Customer> getCustomer(@Path(value = "uri", encoded = true) String uri, @Query("merchant_access_token") String merchantAccessToken);
 
     @POST("/{uri}")
-    Call<Payment> createPayment(@Path(value = "uri", encoded = false) String uri, @Body MerchantPayment body);
+    Call<Payment> createPayment(@Path(value = "uri", encoded = true) String uri, @Body MerchantPayment body);
 
     @GET("/{uri}")
-    Call<Discount> getDiscount(@Path(value = "uri", encoded = false) String uri, @Query("merchant_access_token") String merchantAccessToken, @Query("item.id") String itemId, @Query("item.quantity") Integer itemQuantity);
+    Call<Discount> getDiscount(@Path(value = "uri", encoded = true) String uri, @Query("merchant_access_token") String merchantAccessToken, @Query("item.id") String itemId, @Query("item.quantity") Integer itemQuantity);
 }

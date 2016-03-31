@@ -10,12 +10,7 @@ import android.widget.Toast;
 import com.mercadopago.R;
 import com.mercadopago.model.ApiException;
 
-import java.lang.annotation.Annotation;
-
-import okhttp3.ResponseBody;
-import retrofit2.Converter;
 import retrofit2.Response;
-import retrofit2.Retrofit;
 
 public class ApiUtil {
 
@@ -41,7 +36,7 @@ public class ApiUtil {
 
             // Return with api exception
             Intent intent = new Intent();
-            activity.setResult(activity.RESULT_CANCELED, intent);
+            activity.setResult(Activity.RESULT_CANCELED, intent);
             intent.putExtra("apiException", JsonUtil.getInstance().toJson(apiException));
             activity.finish();
         }
@@ -78,15 +73,14 @@ public class ApiUtil {
 
     private static ApiException getApiException(Response<?> response) {
 
-        Converter<ResponseBody, ApiException> converter =
-                new Retrofit.Builder().build()
-                        .responseBodyConverter(ApiException.class, new Annotation[0]);
-
         ApiException apiException = null;
         try {
-            apiException = converter.convert(response.errorBody());
+
+            String errorString = response.errorBody().string();
+            apiException = JsonUtil.getInstance().fromJson(errorString, ApiException.class);
 
         } catch (Exception ex) {
+            String a  = ex.getMessage();
             // do nothing
         }
 

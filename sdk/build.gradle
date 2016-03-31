@@ -35,7 +35,7 @@ android {
         debug {
             versionNameSuffix " Debug"
             debuggable true
-            testCoverageEnabled = true
+            testCoverageEnabled = false
         }
     }
 }
