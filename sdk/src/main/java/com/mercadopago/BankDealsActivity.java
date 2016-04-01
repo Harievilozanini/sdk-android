@@ -9,17 +9,17 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
 import com.mercadopago.adapters.BankDealsAdapter;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.decorations.DividerItemDecoration;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.BankDeal;
 import com.mercadopago.util.ApiUtil;
 import com.mercadopago.util.LayoutUtil;
 
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Response;
 
 public class BankDealsActivity extends AppCompatActivity {
 
@@ -73,11 +73,12 @@ public class BankDealsActivity extends AppCompatActivity {
     private void getBankDeals() {
 
         LayoutUtil.showProgressLayout(mActivity);
-        mMercadoPago.getBankDeals(new Callback<List<BankDeal>>() {
+        ErrorHandlingCallAdapter.MyCall<List<BankDeal>> call = mMercadoPago.getBankDeals();
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<BankDeal>>() {
             @Override
-            public void success(List<BankDeal> bankDeals, Response response) {
+            public void success(Response<List<BankDeal>> response) {
 
-                mRecyclerView.setAdapter(new BankDealsAdapter(mActivity, bankDeals, new View.OnClickListener() {
+                mRecyclerView.setAdapter(new BankDealsAdapter(mActivity, response.body(), new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
 
@@ -92,9 +93,9 @@ public class BankDealsActivity extends AppCompatActivity {
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void failure(ApiException apiException) {
 
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }

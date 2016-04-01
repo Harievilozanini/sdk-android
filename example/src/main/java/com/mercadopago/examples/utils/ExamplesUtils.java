@@ -1,20 +1,19 @@
 package com.mercadopago.examples.utils;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.os.Bundle;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.core.MerchantServer;
+import com.mercadopago.examples.step1.CardActivity;
 import com.mercadopago.examples.step2.SimpleVaultActivity;
 import com.mercadopago.examples.step3.AdvancedVaultActivity;
-import com.mercadopago.examples.step1.CardActivity;
 import com.mercadopago.examples.step4.FinalVaultActivity;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.Discount;
 import com.mercadopago.model.Item;
 import com.mercadopago.model.MerchantPayment;
@@ -26,11 +25,8 @@ import com.mercadopago.util.LayoutUtil;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Locale;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Response;
 
 public class ExamplesUtils {
 
@@ -131,22 +127,23 @@ public class ExamplesUtils {
                     token, paymentMethodId, campaignId, DUMMY_MERCHANT_ACCESS_TOKEN);
 
             // Create payment
-            MerchantServer.createPayment(activity, DUMMY_MERCHANT_BASE_URL, DUMMY_MERCHANT_CREATE_PAYMENT_URI, payment, new Callback<Payment>() {
+            ErrorHandlingCallAdapter.MyCall<Payment> call = MerchantServer.createPayment(activity, DUMMY_MERCHANT_BASE_URL, DUMMY_MERCHANT_CREATE_PAYMENT_URI, payment);
+            call.enqueue(new ErrorHandlingCallAdapter.MyCallback<Payment>() {
                 @Override
-                public void success(Payment payment, Response response) {
+                public void success(Response<Payment> response) {
 
                     new MercadoPago.StartActivityBuilder()
                             .setActivity(activity)
-                            .setPayment(payment)
+                            .setPayment(response.body())
                             .setPaymentMethod(paymentMethod)
                             .startCongratsActivity();
                 }
 
                 @Override
-                public void failure(RetrofitError error) {
+                public void failure(ApiException apiException) {
 
                     LayoutUtil.showRegularLayout(activity);
-                    Toast.makeText(activity, error.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(activity, apiException.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         } else {

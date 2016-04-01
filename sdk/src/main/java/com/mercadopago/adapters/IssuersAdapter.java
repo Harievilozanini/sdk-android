@@ -6,8 +6,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.mercadopago.model.Issuer;
 import com.mercadopago.R;
+import com.mercadopago.model.Issuer;
 
 import java.util.List;
 

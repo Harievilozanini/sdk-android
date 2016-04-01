@@ -16,8 +16,10 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.adapters.IdentificationTypesAdapter;
 import com.mercadopago.core.MercadoPago;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.CardToken;
 import com.mercadopago.model.IdentificationType;
 import com.mercadopago.model.PaymentMethod;
@@ -28,9 +30,7 @@ import com.mercadopago.util.MercadoPagoUtil;
 
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Response;
 
 public class NewCardActivity extends AppCompatActivity {
 
@@ -258,11 +258,12 @@ public class NewCardActivity extends AppCompatActivity {
                 .setKey(mKey, mKeyType)
                 .build();
 
-        mercadoPago.getIdentificationTypes(new Callback<List<IdentificationType>>() {
+        ErrorHandlingCallAdapter.MyCall<List<IdentificationType>> call = mercadoPago.getIdentificationTypes();
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<IdentificationType>>() {
             @Override
-            public void success(List<IdentificationType> identificationTypes, Response response) {
+            public void success(Response<List<IdentificationType>> response) {
 
-                mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, identificationTypes));
+                mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, response.body()));
 
                 // Set form "Go" button
                 if (mSecurityCodeLayout.getVisibility() == View.GONE) {
@@ -273,9 +274,9 @@ public class NewCardActivity extends AppCompatActivity {
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void failure(ApiException apiException) {
 
-                if ((error.getResponse() != null) && (error.getResponse().getStatus() == 404)) {
+                if (apiException.getStatus() == 404) {
 
                     // No identification type for this country
                     mIdentificationLayout.setVisibility(View.GONE);
@@ -289,7 +290,7 @@ public class NewCardActivity extends AppCompatActivity {
 
                 } else {
 
-                    ApiUtil.finishWithApiException(mActivity, error);
+                    ApiUtil.finishWithApiException(mActivity, apiException);
                 }
             }
         });

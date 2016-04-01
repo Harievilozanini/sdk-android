@@ -15,9 +15,11 @@ import android.widget.TextView;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mercadopago.adapters.CustomerCardsAdapter;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.core.MerchantServer;
 import com.mercadopago.examples.R;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.Card;
 import com.mercadopago.model.CardToken;
 import com.mercadopago.model.Customer;
@@ -33,9 +35,7 @@ import com.mercadopago.util.MercadoPagoUtil;
 import java.lang.reflect.Type;
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Response;
 
 public class SimpleVaultActivity extends AppCompatActivity {
 
@@ -278,19 +278,20 @@ public class SimpleVaultActivity extends AppCompatActivity {
     protected void getCustomerCardsAsync() {
 
         LayoutUtil.showProgressLayout(mActivity);
-        MerchantServer.getCustomer(this, mMerchantBaseUrl, mMerchantGetCustomerUri, mMerchantAccessToken, new Callback<Customer>() {
+        ErrorHandlingCallAdapter.MyCall<Customer> call = MerchantServer.getCustomer(this, mMerchantBaseUrl, mMerchantGetCustomerUri, mMerchantAccessToken);
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<Customer>() {
             @Override
-            public void success(Customer customer, Response response) {
+            public void success(Response<Customer> response) {
 
-                mCards = customer.getCards();
+                mCards = response.body().getCards();
                 LayoutUtil.showRegularLayout(mActivity);
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "getCustomerCardsAsync";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }
@@ -401,7 +402,8 @@ public class SimpleVaultActivity extends AppCompatActivity {
 
         // Create token
         LayoutUtil.showProgressLayout(mActivity);
-        mMercadoPago.createToken(mCardToken, getCreateTokenCallback());
+        ErrorHandlingCallAdapter.MyCall<Token> call = mMercadoPago.createToken(mCardToken);
+        call.enqueue(getCreateTokenCallback());
     }
 
     protected void createSavedCardToken() {
@@ -421,27 +423,28 @@ public class SimpleVaultActivity extends AppCompatActivity {
 
         // Create token
         LayoutUtil.showProgressLayout(mActivity);
-        mMercadoPago.createToken(savedCardToken, getCreateTokenCallback());
+        ErrorHandlingCallAdapter.MyCall<Token> call = mMercadoPago.createToken(savedCardToken);
+        call.enqueue(getCreateTokenCallback());
     }
 
-    protected Callback<Token> getCreateTokenCallback() {
+    protected ErrorHandlingCallAdapter.MyCallback<Token> getCreateTokenCallback() {
 
-        return new Callback<Token>() {
+        return new ErrorHandlingCallAdapter.MyCallback<Token>() {
             @Override
-            public void success(Token token, Response response) {
+            public void success(Response<Token> response) {
 
                 Intent returnIntent = new Intent();
-                returnIntent.putExtra("token", token.getId());
+                returnIntent.putExtra("token", response.body().getId());
                 returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mSelectedPaymentMethod));
                 setResult(RESULT_OK, returnIntent);
                 finish();
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "getCreateTokenCallback";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         };
     }

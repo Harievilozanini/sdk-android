@@ -8,10 +8,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.mercadopago.R;
 import com.mercadopago.model.Card;
 import com.mercadopago.model.PaymentMethodRow;
 import com.mercadopago.util.MercadoPagoUtil;
-import com.mercadopago.R;
 
 import java.util.ArrayList;
 import java.util.List;

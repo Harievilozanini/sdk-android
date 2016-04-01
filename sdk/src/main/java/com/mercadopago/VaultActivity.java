@@ -2,7 +2,6 @@ package com.mercadopago;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.KeyEvent;
@@ -19,11 +18,16 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mercadopago.adapters.CustomerCardsAdapter;
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.core.MerchantServer;
+import com.mercadopago.model.ApiException;
+import com.mercadopago.model.Card;
 import com.mercadopago.model.CardToken;
+import com.mercadopago.model.Customer;
 import com.mercadopago.model.Installment;
 import com.mercadopago.model.Issuer;
+import com.mercadopago.model.PayerCost;
 import com.mercadopago.model.PaymentMethod;
 import com.mercadopago.model.PaymentMethodRow;
 import com.mercadopago.model.SavedCardToken;
@@ -32,17 +36,12 @@ import com.mercadopago.util.ApiUtil;
 import com.mercadopago.util.JsonUtil;
 import com.mercadopago.util.LayoutUtil;
 import com.mercadopago.util.MercadoPagoUtil;
-import com.mercadopago.model.Card;
-import com.mercadopago.model.Customer;
-import com.mercadopago.model.PayerCost;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Response;
 
 public class VaultActivity extends AppCompatActivity {
 
@@ -404,11 +403,13 @@ public class VaultActivity extends AppCompatActivity {
     protected void getCustomerCardsAsync() {
 
         LayoutUtil.showProgressLayout(mActivity);
-        MerchantServer.getCustomer(this, mMerchantBaseUrl, mMerchantGetCustomerUri, mMerchantAccessToken, new Callback<Customer>() {
-            @Override
-            public void success(Customer customer, Response response) {
 
-                mCards = customer.getCards();
+        ErrorHandlingCallAdapter.MyCall<Customer> call = MerchantServer.getCustomer(this, mMerchantBaseUrl, mMerchantGetCustomerUri, mMerchantAccessToken);
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<Customer>() {
+            @Override
+            public void success(Response<Customer> response) {
+
+                mCards = response.body().getCards();
 
                 // If the customer has saved cards show the first one, else show the payment methods step
                 if ((mCards != null) && (mCards.size() > 0)) {
@@ -429,10 +430,10 @@ public class VaultActivity extends AppCompatActivity {
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "getCustomerCardsAsync";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }
@@ -446,19 +447,20 @@ public class VaultActivity extends AppCompatActivity {
 
         if (bin.length() == MercadoPago.BIN_LENGTH) {
             LayoutUtil.showProgressLayout(mActivity);
-            mMercadoPago.getInstallments(bin, amount, issuerId, paymentTypeId, new Callback<List<Installment>>() {
+            ErrorHandlingCallAdapter.MyCall<List<Installment>> call = mMercadoPago.getInstallments(bin, amount, issuerId, paymentTypeId);
+            call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<Installment>>() {
                 @Override
-                public void success(List<Installment> installments, Response response) {
+                public void success(Response<List<Installment>> response) {
 
                     LayoutUtil.showRegularLayout(mActivity);
 
-                    if ((installments.size() > 0) && (installments.get(0).getPayerCosts().size() > 0)) {
+                    if ((response.body().size() > 0) && (response.body().get(0).getPayerCosts().size() > 0)) {
 
                         // Set installments card data and visibility
-                        mPayerCosts = installments.get(0).getPayerCosts();
-                        mSelectedPayerCost = installments.get(0).getPayerCosts().get(0);
+                        mPayerCosts = response.body().get(0).getPayerCosts();
+                        mSelectedPayerCost = response.body().get(0).getPayerCosts().get(0);
 
-                        if (installments.get(0).getPayerCosts().size() == 1) {
+                        if (response.body().get(0).getPayerCosts().size() == 1) {
 
                             mInstallmentsCard.setVisibility(View.GONE);
 
@@ -470,17 +472,17 @@ public class VaultActivity extends AppCompatActivity {
 
                         // Set button visibility
                         mSubmitButton.setEnabled(true);
-
                     } else {
+
                         Toast.makeText(getApplicationContext(), getString(com.mercadopago.R.string.mpsdk_invalid_pm_for_current_amount), Toast.LENGTH_LONG).show();
                     }
                 }
 
                 @Override
-                public void failure(RetrofitError error) {
+                public void failure(ApiException apiException) {
 
                     mExceptionOnMethod = "getInstallmentsAsync";
-                    ApiUtil.finishWithApiException(mActivity, error);
+                    ApiUtil.finishWithApiException(mActivity, apiException);
                 }
             });
         }
@@ -619,7 +621,8 @@ public class VaultActivity extends AppCompatActivity {
 
         // Create token
         LayoutUtil.showProgressLayout(mActivity);
-        mMercadoPago.createToken(mCardToken, getCreateTokenCallback());
+        ErrorHandlingCallAdapter.MyCall<Token> call = mMercadoPago.createToken(mCardToken);
+        call.enqueue(getCreateTokenCallback());
     }
 
     protected void createSavedCardToken() {
@@ -639,17 +642,18 @@ public class VaultActivity extends AppCompatActivity {
 
         // Create token
         LayoutUtil.showProgressLayout(mActivity);
-        mMercadoPago.createToken(savedCardToken, getCreateTokenCallback());
+        ErrorHandlingCallAdapter.MyCall<Token> call = mMercadoPago.createToken(savedCardToken);
+        call.enqueue(getCreateTokenCallback());
     }
 
-    protected Callback<Token> getCreateTokenCallback() {
+    protected ErrorHandlingCallAdapter.MyCallback<Token> getCreateTokenCallback() {
 
-        return new Callback<Token>() {
+        return new ErrorHandlingCallAdapter.MyCallback<Token>() {
             @Override
-            public void success(Token o, Response response) {
+            public void success(Response<Token> response) {
 
                 Intent returnIntent = new Intent();
-                returnIntent.putExtra("token", o.getId());
+                returnIntent.putExtra("token", response.body().getId());
                 if (mSelectedIssuer != null) {
                     returnIntent.putExtra("issuerId", Long.toString(mSelectedIssuer.getId()));
                 }
@@ -660,10 +664,10 @@ public class VaultActivity extends AppCompatActivity {
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "getCreateTokenCallback";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         };
     }

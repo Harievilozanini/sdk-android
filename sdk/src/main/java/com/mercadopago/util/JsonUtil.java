@@ -4,8 +4,7 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.lang.reflect.Type;
-import java.util.List;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class JsonUtil {
 
@@ -36,5 +35,10 @@ public class JsonUtil {
     public Gson getGson() {
 
         return mGson;
+    }
+
+    public GsonConverterFactory getGsonConverterFactory() {
+
+        return GsonConverterFactory.create(mGson);
     }
 }

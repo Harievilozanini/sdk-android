@@ -16,7 +16,6 @@ import com.mercadopago.model.SavedCardToken;
 import com.mercadopago.util.JsonUtil;
 
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.util.List;
 
 public class StaticMock {

@@ -2,6 +2,7 @@ package com.mercadopago.core;
 
 import android.content.Context;
 
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.model.Customer;
 import com.mercadopago.model.Discount;
 import com.mercadopago.model.MerchantPayment;
@@ -10,28 +11,26 @@ import com.mercadopago.services.MerchantService;
 import com.mercadopago.util.HttpClientUtil;
 import com.mercadopago.util.JsonUtil;
 
-import retrofit.Callback;
-import retrofit.RestAdapter;
-import retrofit.converter.GsonConverter;
+import retrofit2.Retrofit;
 
 public class MerchantServer {
 
-    public static void getCustomer(Context context, String merchantBaseUrl, String merchantGetCustomerUri, String merchantAccessToken, Callback<Customer> callback) {
+    public static ErrorHandlingCallAdapter.MyCall<Customer> getCustomer(Context context, String merchantBaseUrl, String merchantGetCustomerUri, String merchantAccessToken) {
 
         MerchantService service = getService(context, merchantBaseUrl);
-        service.getCustomer(ripFirstSlash(merchantGetCustomerUri), merchantAccessToken, callback);
+        return service.getCustomer(ripFirstSlash(merchantGetCustomerUri), merchantAccessToken);
     }
 
-    public static void createPayment(Context context, String merchantBaseUrl, String merchantCreatePaymentUri, MerchantPayment payment, final Callback<Payment> callback) {
+    public static ErrorHandlingCallAdapter.MyCall<Payment> createPayment(Context context, String merchantBaseUrl, String merchantCreatePaymentUri, MerchantPayment payment) {
 
         MerchantService service = getService(context, merchantBaseUrl);
-        service.createPayment(ripFirstSlash(merchantCreatePaymentUri), payment, callback);
+        return service.createPayment(ripFirstSlash(merchantCreatePaymentUri), payment);
     }
 
-    public static void getDiscount(Context context, String merchantBaseUrl, String merchantGetDiscountUri, String merchantAccessToken, String itemId, Integer itemQuantity, final Callback<Discount> callback) {
+    public static ErrorHandlingCallAdapter.MyCall<Discount> getDiscount(Context context, String merchantBaseUrl, String merchantGetDiscountUri, String merchantAccessToken, String itemId, Integer itemQuantity) {
 
         MerchantService service = getService(context, merchantBaseUrl);
-        service.getDiscount(ripFirstSlash(merchantGetDiscountUri), merchantAccessToken, itemId, itemQuantity, callback);
+        return service.getDiscount(ripFirstSlash(merchantGetDiscountUri), merchantAccessToken, itemId, itemQuantity);
     }
 
     private static String ripFirstSlash(String uri) {
@@ -39,19 +38,19 @@ public class MerchantServer {
         return uri.startsWith("/") ? uri.substring(1, uri.length()) : uri;
     }
 
-    private static RestAdapter getRestAdapter(Context context, String endPoint) {
+    private static Retrofit getRestAdapter(Context context, String endPoint) {
 
-        return new RestAdapter.Builder()
-                .setEndpoint(endPoint)
-                .setLogLevel(Settings.RETROFIT_LOGGING)
-                .setConverter(new GsonConverter(JsonUtil.getInstance().getGson()))
-                .setClient(HttpClientUtil.getClient(context))
+        return new Retrofit.Builder()
+                .baseUrl(endPoint)
+                .client(HttpClientUtil.getClient(context))
+                .addConverterFactory(JsonUtil.getInstance().getGsonConverterFactory())
+                .addCallAdapterFactory(new ErrorHandlingCallAdapter.ErrorHandlingCallAdapterFactory())
                 .build();
     }
 
     private static MerchantService getService(Context context, String endPoint) {
 
-        RestAdapter restAdapter =getRestAdapter(context, endPoint);
+        Retrofit restAdapter =getRestAdapter(context, endPoint);
         return restAdapter.create(MerchantService.class);
     }
 }

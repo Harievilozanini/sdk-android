@@ -1,8 +1,8 @@
 package com.mercadopago.core;
 
-import retrofit.RestAdapter;
+import okhttp3.logging.HttpLoggingInterceptor;
 
 public class Settings {
 
-    public static final retrofit.RestAdapter.LogLevel RETROFIT_LOGGING = RestAdapter.LogLevel.NONE;
+    public static final HttpLoggingInterceptor.Level OKHTTP_LOGGING = HttpLoggingInterceptor.Level.NONE;
 }

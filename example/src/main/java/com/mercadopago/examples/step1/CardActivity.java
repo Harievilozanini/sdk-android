@@ -16,9 +16,11 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.adapters.IdentificationTypesAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.examples.R;
+import com.mercadopago.model.ApiException;
 import com.mercadopago.model.CardToken;
 import com.mercadopago.model.IdentificationType;
 import com.mercadopago.model.PaymentMethod;
@@ -30,9 +32,7 @@ import com.mercadopago.util.MercadoPagoUtil;
 
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Response;
 
 public class CardActivity extends AppCompatActivity {
 
@@ -238,11 +238,12 @@ public class CardActivity extends AppCompatActivity {
 
         LayoutUtil.showProgressLayout(mActivity);
 
-        mMercadoPago.getIdentificationTypes(new Callback<List<IdentificationType>>() {
+        ErrorHandlingCallAdapter.MyCall<List<IdentificationType>> call = mMercadoPago.getIdentificationTypes();
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<List<IdentificationType>>() {
             @Override
-            public void success(List<IdentificationType> identificationTypes, Response response) {
+            public void success(Response<List<IdentificationType>> response) {
 
-                mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, identificationTypes));
+                mIdentificationType.setAdapter(new IdentificationTypesAdapter(mActivity, response.body()));
 
                 // Set form "Go" button
                 setFormGoButton(mIdentificationNumber);
@@ -251,9 +252,9 @@ public class CardActivity extends AppCompatActivity {
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void failure(ApiException apiException) {
 
-                if ((error.getResponse() != null) && (error.getResponse().getStatus() == 404)) {
+                if (apiException.getStatus() == 404) {
 
                     // No identification type for this country
                     mIdentificationLayout.setVisibility(View.GONE);
@@ -266,7 +267,7 @@ public class CardActivity extends AppCompatActivity {
                 } else {
 
                     mExceptionOnMethod = "getIdentificationTypesAsync";
-                    ApiUtil.finishWithApiException(mActivity, error);
+                    ApiUtil.finishWithApiException(mActivity, apiException);
                 }
             }
         });
@@ -276,22 +277,23 @@ public class CardActivity extends AppCompatActivity {
 
         LayoutUtil.showProgressLayout(mActivity);
 
-        mMercadoPago.createToken(mCardToken, new Callback<Token>() {
+        ErrorHandlingCallAdapter.MyCall<Token> call = mMercadoPago.createToken(mCardToken);
+        call.enqueue(new ErrorHandlingCallAdapter.MyCallback<Token>() {
             @Override
-            public void success(Token token, Response response) {
+            public void success(Response<Token> response) {
 
                 Intent returnIntent = new Intent();
-                returnIntent.putExtra("token", token.getId());
+                returnIntent.putExtra("token", response.body().getId());
                 returnIntent.putExtra("paymentMethod", JsonUtil.getInstance().toJson(mPaymentMethod));
                 setResult(RESULT_OK, returnIntent);
                 finish();
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void failure(ApiException apiException) {
 
                 mExceptionOnMethod = "createTokenAsync";
-                ApiUtil.finishWithApiException(mActivity, error);
+                ApiUtil.finishWithApiException(mActivity, apiException);
             }
         });
     }

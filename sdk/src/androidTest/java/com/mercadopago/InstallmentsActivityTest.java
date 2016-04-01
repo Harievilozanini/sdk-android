@@ -13,7 +13,6 @@ import com.mercadopago.test.BaseTest;
 import com.mercadopago.test.StaticMock;
 import com.mercadopago.util.JsonUtil;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public class InstallmentsActivityTest extends BaseTest<InstallmentsActivity> {

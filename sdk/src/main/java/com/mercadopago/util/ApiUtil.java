@@ -10,35 +10,11 @@ import android.widget.Toast;
 import com.mercadopago.R;
 import com.mercadopago.model.ApiException;
 
-import retrofit.RetrofitError;
+import retrofit2.Response;
 
 public class ApiUtil {
 
-    public static ApiException getApiException(RetrofitError error) {
-
-        ApiException apiException = null;
-        try {
-            apiException = (ApiException) error.getBodyAs(ApiException.class);
-
-        } catch (Exception ex) {
-            // do nothing
-        }
-
-        if (apiException == null) {
-            apiException = new ApiException();
-            try {
-                apiException.setMessage(error.getMessage());
-                apiException.setStatus(error.getResponse().getStatus());
-
-            } catch (Exception ex) {
-                // do nothing
-            }
-        }
-
-        return apiException;
-    }
-
-    public static void finishWithApiException(Activity activity, RetrofitError error) {
+    public static void finishWithApiException(Activity activity, ApiException apiException) {
 
         if (!ApiUtil.checkConnection(activity)) {  // check for connection error
 
@@ -50,8 +26,7 @@ public class ApiUtil {
 
             // Return with api exception
             Intent intent = new Intent();
-            activity.setResult(activity.RESULT_CANCELED, intent);
-            ApiException apiException = getApiException(error);
+            activity.setResult(Activity.RESULT_CANCELED, intent);
             intent.putExtra("apiException", JsonUtil.getInstance().toJson(apiException));
             activity.finish();
         }
@@ -84,5 +59,34 @@ public class ApiUtil {
         else {
             return false;
         }
+    }
+
+    public static ApiException getApiException(Response<?> response) {
+
+        ApiException apiException = null;
+        try {
+
+            String errorString = response.errorBody().string();
+            apiException = JsonUtil.getInstance().fromJson(errorString, ApiException.class);
+
+        } catch (Exception ex) {
+            String a  = ex.getMessage();
+            // do nothing
+        }
+
+        return apiException;
+    }
+
+    public static ApiException getApiException(Throwable throwable) {
+
+        ApiException apiException = new ApiException();
+        try {
+            apiException.setMessage(throwable.getMessage());
+
+        } catch (Exception ex) {
+            // do nothing
+        }
+
+        return apiException;
     }
 }
