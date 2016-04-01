@@ -22,9 +22,12 @@ import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.core.MerchantServer;
 import com.mercadopago.model.ApiException;
+import com.mercadopago.model.Card;
 import com.mercadopago.model.CardToken;
+import com.mercadopago.model.Customer;
 import com.mercadopago.model.Installment;
 import com.mercadopago.model.Issuer;
+import com.mercadopago.model.PayerCost;
 import com.mercadopago.model.PaymentMethod;
 import com.mercadopago.model.PaymentMethodRow;
 import com.mercadopago.model.SavedCardToken;
@@ -33,16 +36,11 @@ import com.mercadopago.util.ApiUtil;
 import com.mercadopago.util.JsonUtil;
 import com.mercadopago.util.LayoutUtil;
 import com.mercadopago.util.MercadoPagoUtil;
-import com.mercadopago.model.Card;
-import com.mercadopago.model.Customer;
-import com.mercadopago.model.PayerCost;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
 
 public class VaultActivity extends AppCompatActivity {

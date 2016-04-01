@@ -1,16 +1,16 @@
 package com.mercadopago.util;
 
-import okhttp3.Cache;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
+import android.content.Context;
+
+import com.mercadopago.core.Settings;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import android.content.Context;
-
-import com.mercadopago.core.Settings;
+import okhttp3.Cache;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 
 public class HttpClientUtil {
 

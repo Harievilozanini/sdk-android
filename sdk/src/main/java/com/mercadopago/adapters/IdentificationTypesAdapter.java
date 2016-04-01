@@ -8,8 +8,8 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-import com.mercadopago.model.IdentificationType;
 import com.mercadopago.R;
+import com.mercadopago.model.IdentificationType;
 
 import java.util.List;
 

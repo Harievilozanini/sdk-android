@@ -16,6 +16,10 @@ package com.mercadopago.adapters;
  * limitations under the License.
  */
 
+import android.os.Handler;
+import android.os.Looper;
+import android.support.annotation.NonNull;
+
 import com.google.gson.reflect.TypeToken;
 import com.mercadopago.model.ApiException;
 import com.mercadopago.util.ApiUtil;
@@ -23,7 +27,6 @@ import com.mercadopago.util.ApiUtil;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.concurrent.Executor;
 
 import retrofit2.Call;
 import retrofit2.CallAdapter;
@@ -80,6 +83,8 @@ public final class ErrorHandlingCallAdapter {
         }
     }
 
+    // This adapter runs its callbacks on the main thread always
+    // TODO: customize executor
     /** Adapts a {@link Call} to {@link MyCall}. */
     static class MyCallAdapter<T> implements MyCall<T> {
         private final Call<T> call;
@@ -97,18 +102,30 @@ public final class ErrorHandlingCallAdapter {
                 @Override
                 public void onResponse(Call<T> call, Response<T> response) {
 
-                    int code = response.code();
-                    if (code >= 200 && code < 300) {
-                        callback.success(response);
-                    } else {
-                        callback.failure(ApiUtil.getApiException(response));
-                    }
+                    final Response<T> r = response;
+                    executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            int code = r.code();
+                            if (code >= 200 && code < 300) {
+                                callback.success(r);
+                            } else {
+                                callback.failure(ApiUtil.getApiException(r));
+                            }
+                        }
+                    });
                 }
 
                 @Override
                 public void onFailure(Call<T> call, Throwable t) {
 
-                    callback.failure(ApiUtil.getApiException(t));
+                    final Throwable th  = t;
+                    executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.failure(ApiUtil.getApiException(th));
+                        }
+                    });
                 }
             });
         }
@@ -116,6 +133,12 @@ public final class ErrorHandlingCallAdapter {
         @Override public MyCall<T> clone() {
             return new MyCallAdapter<>(call.clone());
         }
+    }
+
+    private static void executeOnMainThread(@NonNull Runnable r) {
+
+        final Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(r);
     }
 }
 

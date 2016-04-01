@@ -9,9 +9,9 @@ import com.google.gson.reflect.TypeToken;
 import com.mercadopago.adapters.ErrorHandlingCallAdapter;
 import com.mercadopago.core.MercadoPago;
 import com.mercadopago.core.MerchantServer;
+import com.mercadopago.examples.step1.CardActivity;
 import com.mercadopago.examples.step2.SimpleVaultActivity;
 import com.mercadopago.examples.step3.AdvancedVaultActivity;
-import com.mercadopago.examples.step1.CardActivity;
 import com.mercadopago.examples.step4.FinalVaultActivity;
 import com.mercadopago.model.ApiException;
 import com.mercadopago.model.Discount;
@@ -26,8 +26,6 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ExamplesUtils {

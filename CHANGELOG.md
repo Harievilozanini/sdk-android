@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+## VERSION 0.9.16
+
+_01-04-2016_
+
+* New: Upgrade Retrofit to 2.0
+* New: Upgrade Target SDK version to 23
+* New: Upgrade AppCompat Support Lib to 23.1.1
+* New: Upgrade Build Tools to 23.0.2
+
 ## VERSION 0.9.15
 
 _25-09-2015_

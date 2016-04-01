@@ -31,7 +31,6 @@ import com.mercadopago.services.IdentificationService;
 import com.mercadopago.services.PaymentService;
 import com.mercadopago.util.HttpClientUtil;
 import com.mercadopago.util.JsonUtil;
-import com.mercadopago.util.ThreadingUtils;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
